@@ -1,7 +1,6 @@
 # Click to Call - Node.js
 
-This is an application example implementing Click to Call using Twilio.  For a
-step-by-step tutorial, [visit this link](https://twilio.com/docs/howto/click-to-call).
+This is an application example implementing Click to Call (with Gathering capabilities) and SMS using Twilio.  For the original project see the original step-by-step tutorial, [visit this link](https://twilio.com/docs/howto/click-to-call).
 
 [Read the full tutorial here](https://www.twilio.com/docs/tutorials/walkthrough/click-to-call/node/express)!
 
@@ -11,48 +10,19 @@ Step-by-step on how to deploy, configure and develop on this example app.
 
 ### Fastest Deploy
 
-Use Heroku to deploy this app immediately.
-
-[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy?template=https://github.com/TwilioDevEd/clicktocall-node)
-
-### Getting Started
-
-1. Clone repository and `cd` into it.
-
-```
-git clone git://github.com/TwilioDevEd/clicktocall-node.git
-```
-
-1. Navigate to folder and create new Heroku Cedar app.
-
-```
-heroku create
-```
-
-1. Deploy to Heroku.
-
-```
-git push heroku master
-```
-
-1. Scale your dynos.
-
-```
-heroku scale web=1
-```
-
-1. Visit the home page of your new Heroku app to see your newly configured app!
-
-```
-heroku open
-```
-
+Use ACCS to deploy this app.
 
 ### Configuration
 
 #### Setting Your Environment Variables
 
-Are you using a bash shell? Use echo $SHELL to find out. For a bash shell, using the Gmail example, edit the ~/.bashrc or ~/.bashprofile file and add:
+1. Download zip or Clone repository and `cd` into it.
+
+```
+git clone git://github.com/barackd222/s2v-iia-nodejs-voicesms-apis.git
+
+
+2. Are you using a bash shell? Use echo $SHELL to find out. For a bash shell, using the Gmail example, edit the ~/.bashrc or ~/.bashprofile file and add:
 
 ```
 export TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxx
@@ -75,13 +45,20 @@ get it going locally.
 npm install
 ```
 
+Override body-parser:
+
+```
+npm install body-parser
+```
+
+
 1. Launch local development webserver.
 
 ```
 node app.js
 ```
 
-1. Open browser to [http://localhost:3000](http://localhost:3000).
+1. Open browser to [http://localhost:PORT](http://localhost:PORT).
 
 1. Tweak away on `routes/index.js`.
 
@@ -89,4 +66,4 @@ node app.js
 
 * No warranty expressed or implied.  Software is as is. Diggity.
 * [MIT License](http://www.opensource.org/licenses/mit-license.html)
-* Lovingly crafted by Twilio Developer Education.
+
