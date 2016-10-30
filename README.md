@@ -1,4 +1,4 @@
-# Click to Call - Node.js
+# Voice and SMS Notification Service - Node.js
 
 This is an application example implementing Click to Call (with Gathering capabilities) and SMS using Twilio.  For the original project see the original step-by-step tutorial, [visit this link](https://twilio.com/docs/howto/click-to-call).
 
