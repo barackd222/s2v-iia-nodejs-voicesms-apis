@@ -20,7 +20,7 @@ Use ACCS to deploy this app.
 
 ```
 git clone git://github.com/barackd222/s2v-iia-nodejs-voicesms-apis.git
-
+```
 
 2. Are you using a bash shell? Use echo $SHELL to find out. For a bash shell, using the Gmail example, edit the ~/.bashrc or ~/.bashprofile file and add:
 
