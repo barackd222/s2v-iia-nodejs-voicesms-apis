@@ -4,6 +4,8 @@ var morgan = require('morgan');
 var bodyParser = require('body-parser');
 var twilio = require('twilio');
 var config = require("../config");
+var http = require('http');
+var https = require('https');
 
 //CRI change:
 var bodyParser = require('body-parser');
@@ -184,10 +186,81 @@ module.exports = function (app) {
     app.get('/processmenu', function (request, response) {
 
         var option = request.query.Digits;
-        console.log("User entered option [" + option + "]");    
-            
-        //Hanging up current call
-        response.render('hangup');
+        console.log("User entered option [" + option + "]");
+
+        //If 1: Send a message to Salesforce
+        //If 2: Send a message to Facebook  
+        //If 3: Send a message to LinkedIn
+        //If 4: Call Franco and ask him what to do...
+        var currentdate = new Date();
+        var datetime = "Message sent at: " + currentdate.getDate() + "/"
+            + (currentdate.getMonth() + 1) + "/"
+            + currentdate.getFullYear() + " @ "
+            + currentdate.getHours() + ":"
+            + currentdate.getMinutes() + ":"
+            + currentdate.getSeconds();
+        var msgToBeSent = "Hello, this message was produced using Twilio APIs in Oracle ";
+        msgToBeSent += "Application Container Cloud Service and subsequently integrated ";
+        msgToBeSent += "via Oracle Integration Cloud Service. ";
+        msgToBeSent += "Message sent on " + datetime + ". We wish you happy APIs...";
+
+        if (option != null && option != undefined) {
+
+            switch (option) {
+
+                case "1":
+                    var voiceMsg = "Thank you we are going to send a message to Salesforce. Good bye";
+
+                    // Call the API
+                    callAPI("Salesforce", msgToBeSent);
+
+                    //Callback to Twilio with a voice response.
+                    response.type('text/xml');
+                    response.render('outbound', { msg: voiceMsg });
+
+                    break;
+
+                case "2":
+                    var voiceMsg = "Thank you we are going to send a message to Facebook. Good bye";
+
+                    // Call the API
+                    callAPI("Facebook", msgToBeSent);
+
+                    //Callback to Twilio with a voice response.
+                    response.type('text/xml');
+                    response.render('outbound', { msg: voiceMsg });
+
+                    break;
+
+                case "3":
+                    var voiceMsg = "Thank you we are going to send a message to LinkedIn. Good bye"
+
+                    // Call the API
+                    callAPI("LinkedIn", msgToBeSent);
+
+                    //Callback to Twilio with a voice response.
+                    response.type('text/xml');
+                    response.render('outbound', { msg: voiceMsg });
+
+                    break;
+
+                case "4":
+                    var mobile = "+61414567657";//Franco's mobile'
+                    var name = "Franco";
+                    response.type('text/xml');
+                    response.render('callSomeone', { name: name, mobile: mobile });
+                    break;
+
+                default:
+                    console.log("Unknown option!!! Nothing to do...");
+                    //Hanging up current call
+                    response.type('text/xml');
+                    response.render('hangup');
+
+            }
+        }
+
+
     });
 
 
@@ -232,6 +305,84 @@ module.exports = function (app) {
         response.sendStatus(202).end();
 
     });
+
+
+    function callAPI(target, msg) {
+
+        // Command the AR Drone 2 to take off, stay and land!
+        var host = "integration-jcsdemo0033.integration.us2.oraclecloud.com";
+        var port = 443;
+        var path = "/integration/flowapi/rest";
+        var method = "POST";
+        var body = null;
+
+        // Assessing the target:
+        switch (target) {
+
+            case "Salesforce":
+                path += "/S2VSALESFORCETORESTINTEGRATION/v01/salesforce/campaign";
+                body = '{"Id":"70190000000Xf4w", "Description":"' + msg + '"}';
+                break;
+
+            case "Facebook":
+                path += "/S2VFACEBOOKINTEGRATION/v01/social/facebook/message";
+                body = '{"message":"' + msg + '"}';
+                break;
+
+            case "LinkedIn":
+                path += "/S2VLINKEDININTEGRATION/v01/social/linkedin/message";
+                body = '{"message":"' + msg + '"}';
+                break;
+
+            default:
+                console.log("Unknown target!!! Nothing to do...");
+                return;
+        }
+
+        // Send action to take off AR Drone 2.0
+        sendRequest(host, port, path, method, body);
+    }
+
+    function sendRequest(host, port, path, method, post_data) {
+
+        var post_req = null;
+        var username = "john.dunbar";
+        var passw = "humbleLayer_2095";
+
+
+        var options = {
+            host: host,
+            port: port,
+            path: path,
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
+                'Content-Length': post_data.length,
+                'Authorization': 'Basic ' + new Buffer(username + ':' + passw).toString('base64')
+            }
+        };
+
+
+        post_req = https.request(options, function (res) {
+
+            console.log("Sending [" + host + ":" + port + path + "] under method [" + method + "]");
+            console.log('STATUS: ' + res.statusCode);
+            console.log('HEADERS: ' + JSON.stringify(res.headers));
+            res.setEncoding('utf8');
+            res.on('data', function (chunk) {
+                console.log('Response: ', chunk);
+            });
+        });
+
+        post_req.on('error', function (e) {
+            console.log('There was a problem with request: ' + e.message);
+        });
+
+        post_req.write(post_data);
+        post_req.end();
+
+    }
 
 };
 
