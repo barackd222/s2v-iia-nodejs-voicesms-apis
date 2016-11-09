@@ -73,6 +73,47 @@ module.exports = function (app) {
         response.render('outbound', { msg: 'Hello, Callan. I am calling you from the Oracle Cloud. I know everything about you. I can see everything...I am watching you.' });
     });
 
+
+    // Handle an AJAX POST request to place an outbound call
+    app.get('/getcall', function (request, response) {
+
+        // "to" and "msg" are NOT set via query or parameters anymore. Only via a POST body is allowed here.
+        var to = request.query.to;
+        var msg = request.query.msg;
+
+        if (msg == null || msg == undefined || to == null || to == undefined) {
+            console.log("Message or To number were not defined. Bad request found, thus nothing to do...");
+            //response.sendStatus(400);//Bad request...
+            return;
+        }
+
+
+        // This should be the publicly accessible URL for your application
+        // Here, we just use the host for the application making the request,
+        // but you can hard code it or use something different if need be
+        var url = 'http://' + request.headers.host + '/voiceoutbound' + '?msg=' + encodeURI(msg);
+        console.log("URL is [" + url + "], to is [" + to + "], msg is [" + msg + "]");
+
+        // Place an outbound call to the user, using the TwiML instructions
+        // from the /outbound route
+        client.makeCall({
+            to: to,
+            from: config.twilioNumber,
+            url: url
+        }, function (err, message) {
+            console.log(err);
+            if (err) {
+                //response.sendStatus(500).send(err);
+            } else {
+                response.send({
+                    message: 'Thank you! We will be calling you shortly.'
+                });
+            }
+        });
+    });
+
+
+
     /** Extend origonal code to allow generic texts and APIs.  */
 
     // Handle an AJAX POST request to place an outbound call
@@ -99,7 +140,7 @@ module.exports = function (app) {
         // from the /outbound route
         client.makeCall({
             to: to,
-            from: config.twilioNumber,
+            from: config.localTwilioNumber,
             url: url
         }, function (err, message) {
             console.log(err);
@@ -140,7 +181,7 @@ module.exports = function (app) {
         // from the /outbound route
         client.makeCall({
             to: to,
-            from: config.twilioNumber,
+            from: config.localTwilioNumber,
             url: url
         }, function (err, message) {
             console.log(err);
@@ -202,7 +243,7 @@ module.exports = function (app) {
         var msgToBeSent = "Hello, this message was produced using Twilio APIs in Oracle ";
         msgToBeSent += "Application Container Cloud Service and subsequently integrated ";
         msgToBeSent += "via Oracle Integration Cloud Service. ";
-        msgToBeSent += "Message sent on " + datetime + ". We wish you happy APIs...";
+        msgToBeSent += datetime + ". We wish you happy APIs...";
 
         if (option != null && option != undefined) {
 
@@ -307,10 +348,69 @@ module.exports = function (app) {
     });
 
 
+    // Processing bulk voice calls
+    app.post('/notification/bulk/:type', function (request, response) {
+
+        console.log("Processing a bulk Notifications...");
+
+        var type = request.params.type;
+
+        if (type == null || type == undefined || (type != "sms" && type != "voicecall")) {
+            console.log("Bulk type incorrect or not present... Nothing to do...");
+            //response.sendStatus(400);//Bad request...
+            return;
+        }
+
+        // Point to array of values...
+        var values = request.body.values;
+
+        if (values == null || values == undefined) {
+            console.log("Bulk payload detected but no values on it... Nothing to do...");
+            //response.sendStatus(400);//Bad request...
+            return;
+        }
+
+
+        for (i = 0; i < values.length; ++i) {
+
+            // Get current key:
+            currentValue = values[i];
+
+            // Do something here with the value...
+            to = currentValue.to;
+            msg = currentValue.msg;
+            console.log("Displaying current value. to is [" + to + "], msg is [" + msg + "]");
+
+
+            if (msg == null || msg == undefined || to == null || to == undefined) {
+                console.log("Message or To number were not defined. Bad request found, thus nothing to do...");
+                //response.sendStatus(400);//Bad request...
+                return;
+            }
+
+
+            // Call the voicecall API:        
+            var host = request.headers.host;
+            host = host.indexOf(":") != -1 ? host.substring(0, host.indexOf(":")) : host;
+            var port = config.port;
+            var path = "/" + type;
+            var method = "POST";
+            var body = JSON.stringify(currentValue);
+
+            // Send action to take off AR Drone 2.0
+            sendRequest(host, port, path, method, body, false);
+        }
+
+        console.log("It is done iterating... Finished processing bulk values. Good bye!");
+        // Return successfully Accepted call.
+        response.sendStatus(202).end();
+    });
+
+
     function callAPI(target, msg) {
 
         // Command the AR Drone 2 to take off, stay and land!
-        var host = "integration-jcsdemo0033.integration.us2.oraclecloud.com";
+        var host = config.ICS_SERVER;
         var port = 443;
         var path = "/integration/flowapi/rest";
         var method = "POST";
@@ -340,14 +440,14 @@ module.exports = function (app) {
         }
 
         // Send action to take off AR Drone 2.0
-        sendRequest(host, port, path, method, body);
+        sendRequest(host, port, path, method, body, true);
     }
 
-    function sendRequest(host, port, path, method, post_data) {
+    function sendRequest(host, port, path, method, post_data, secured) {
 
         var post_req = null;
-        var username = "john.dunbar";
-        var passw = "humbleLayer_2095";
+        var username = config.ICS_USERNAME;
+        var passw = config.ICS_PASSWORD;
 
 
         var options = {
@@ -363,17 +463,34 @@ module.exports = function (app) {
             }
         };
 
+        if (secured) {
 
-        post_req = https.request(options, function (res) {
+            post_req = https.request(options, function (res) {
 
-            console.log("Sending [" + host + ":" + port + path + "] under method [" + method + "]");
-            console.log('STATUS: ' + res.statusCode);
-            console.log('HEADERS: ' + JSON.stringify(res.headers));
-            res.setEncoding('utf8');
-            res.on('data', function (chunk) {
-                console.log('Response: ', chunk);
+                console.log("Sending [" + host + ":" + port + path + "] under method [" + method + "]");
+                console.log('STATUS: ' + res.statusCode);
+                console.log('HEADERS: ' + JSON.stringify(res.headers));
+                res.setEncoding('utf8');
+                res.on('data', function (chunk) {
+                    console.log('Response: ', chunk);
+                });
             });
-        });
+
+        } else {
+
+            post_req = http.request(options, function (res) {
+
+                console.log("Sending [" + host + ":" + port + path + "] under method [" + method + "]");
+                console.log('STATUS: ' + res.statusCode);
+                console.log('HEADERS: ' + JSON.stringify(res.headers));
+                res.setEncoding('utf8');
+                res.on('data', function (chunk) {
+                    console.log('Response: ', chunk);
+                });
+            });
+
+        }
+
 
         post_req.on('error', function (e) {
             console.log('There was a problem with request: ' + e.message);
