@@ -79,6 +79,7 @@ module.exports = function (app) {
 
         // "to" and "msg" are NOT set via query or parameters anymore. Only via a POST body is allowed here.
         var to = request.query.to;
+        to = to.indexOf("+") != -1 ? to : "+" + to;
         var msg = request.query.msg;
 
         if (msg == null || msg == undefined || to == null || to == undefined) {
@@ -121,6 +122,7 @@ module.exports = function (app) {
 
         // "to" and "msg" are NOT set via query or parameters anymore. Only via a POST body is allowed here.
         var to = request.body.to;
+        to = to.indexOf("+") != -1 ? to : "+" + to;
         var msg = request.body.msg;
 
         if (msg == null || msg == undefined || to == null || to == undefined) {
@@ -160,6 +162,7 @@ module.exports = function (app) {
 
         // "to" and "name" are NOT set via query or parameters anymore. Only via a POST body is allowed here.
         var to = request.body.to;
+        to = to.indexOf("+") != -1 ? to : "+" + to;
         var name = request.body.name;
 
         if (name == null || name == undefined || to == null || to == undefined) {
@@ -310,6 +313,7 @@ module.exports = function (app) {
 
         // "to" and "msg" are NOT set via query or parameters anymore. Only via a POST body is allowed here.
         var to = request.body.to;
+        to = to.indexOf("+") != -1 ? to : "+" + to;
         var msg = request.body.msg;
 
         if (msg == null || msg == undefined || to == null || to == undefined) {
@@ -343,7 +347,11 @@ module.exports = function (app) {
         });
 
         // Return successfully Accepted call.
-        response.sendStatus(202).end();
+        //response.sendStatus(202).end();
+
+        response.send({
+            message: 'Thank you! We will send the SMS shortly.'
+        });
 
     });
 
@@ -370,14 +378,15 @@ module.exports = function (app) {
             return;
         }
 
-
-        for (i = 0; i < values.length; ++i) {
+        var i = 0;
+        for (; i < values.length; ++i) {
 
             // Get current key:
             currentValue = values[i];
 
             // Do something here with the value...
             to = currentValue.to;
+            to = to.indexOf("+") != -1 ? to : "+" + to;
             msg = currentValue.msg;
             console.log("Displaying current value. to is [" + to + "], msg is [" + msg + "]");
 
@@ -399,9 +408,12 @@ module.exports = function (app) {
 
             // Send action to take off AR Drone 2.0
             sendRequest(host, port, path, method, body, false);
+
+            // Waiting 0.5 secs to iterate
+            setTimeout(function () { console.log("Ready to iterate again!!!"); }, 500);//0.5 seconds delayed between API calls.
         }
 
-        console.log("It is done iterating... Finished processing bulk values. Good bye!");
+        console.log("It is done iterating... Finished processing [" + i + "] number of bulk values. Good bye!");
         // Return successfully Accepted call.
         response.sendStatus(202).end();
     });
